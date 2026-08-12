@@ -13,8 +13,15 @@ const parser = new Parser({
   timeout: 10_000,
   headers: {
     "User-Agent":
-      "EgitimSonDakika/1.0 (https://egitimde.com; RSS reader)",
+      "EgitimSonDakika/1.0 (https://egitimdesondakika.com.tr; RSS reader)",
     Accept: "application/rss+xml, application/xml, text/xml",
+  },
+  customFields: {
+    item: [
+      ["media:content", "media:content", { keepArray: true }],
+      ["media:thumbnail", "media:thumbnail"],
+      ["enclosure", "enclosure"],
+    ],
   },
 });
 
