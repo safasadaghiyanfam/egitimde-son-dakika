@@ -1,38 +1,33 @@
 /**
  * lib/db.ts
- * SQLite bağlantısı + tablo kurulumu (better-sqlite3)
+ * Veritabanı bağlantısı — geliştirmede yerel SQLite, üretimde Turso (libSQL)
  *
- * DB dosyası: proje kökündeki egitim.db
- * Next.js server component'lerinden import edilerek kullanılır.
+ * Ortam değişkenleri:
+ *   TURSO_DATABASE_URL  — libsql://your-db.turso.io  (Vercel'de zorunlu)
+ *   TURSO_AUTH_TOKEN    — eyJ...                      (Vercel'de zorunlu)
+ *
+ * Yerel geliştirmede bu ikisi yoksa file:./db/egitim.db kullanılır.
  */
 
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
+import { createClient, type Client } from "@libsql/client";
 
-// DB dosyasının yolu — proje kökü
-const DB_DIR = path.join(process.cwd(), "db");
-const DB_PATH = path.join(DB_DIR, "egitim.db");
+/* ── Bağlantı ── */
+let _client: Client | null = null;
 
-// Klasör yoksa oluştur
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+export function getDb(): Client {
+  if (_client) return _client;
+
+  const url = process.env.TURSO_DATABASE_URL ?? "file:./db/egitim.db";
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  _client = createClient({ url, authToken });
+  return _client;
 }
 
-/** Singleton bağlantı — her modül yüklemesinde tek bir instance */
-let _db: Database.Database | null = null;
-
-export function getDb(): Database.Database {
-  if (_db) return _db;
-
-  _db = new Database(DB_PATH);
-
-  // WAL modu: eş zamanlı okuma/yazma performansı
-  _db.pragma("journal_mode = WAL");
-  _db.pragma("foreign_keys = ON");
-
-  // Tablo oluştur (yoksa)
-  _db.exec(`
+/* ── Tablo kurulumu (uygulama açılışında çağrılır) ── */
+export async function setupDb(): Promise<void> {
+  const db = getDb();
+  await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS haberler (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       baslik        TEXT    NOT NULL,
@@ -51,8 +46,6 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_kategori
       ON haberler (kategori);
   `);
-
-  return _db;
 }
 
 /* ── Yardımcı tip ── */

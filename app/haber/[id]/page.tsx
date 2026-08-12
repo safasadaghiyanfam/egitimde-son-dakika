@@ -10,7 +10,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const haber = haberById(Number(id));
+  const haber = await haberById(Number(id));
   if (!haber) return { title: "Haber Bulunamadı" };
   return {
     title: haber.baslik,
@@ -20,11 +20,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function HaberDetay({ params }: PageProps) {
   const { id } = await params;
-  const haber = haberById(Number(id));
+  const haber = await haberById(Number(id));
   if (!haber) notFound();
 
   // İlgili haberler (aynı kategori)
-  const ilgiliHaberler = sonHaberler(40)
+  const tumHaberler = await sonHaberler(40);
+  const ilgiliHaberler = tumHaberler
     .filter((h) => h.id !== haber.id && h.kategori === haber.kategori)
     .slice(0, 6);
 

@@ -142,10 +142,10 @@ function Manshet({ haber }: { haber: Haber | null }) {
 /* ─────────────────────────────────────────────
    ANA SAYFA
    ───────────────────────────────────────────── */
-export default function AnaSayfa() {
+export default async function AnaSayfa() {
   // DB'den haberler
-  const haberler = sonHaberler(120);
-  const toplamSayi = haberSayisi();
+  const haberler = await sonHaberler(120);
+  const toplamSayi = await haberSayisi();
   const gruplar = saatGruplari(haberler.slice(0, 40));  // Sağ akış için ilk 40
 
   // Manşet = en yeni haber

@@ -126,22 +126,6 @@ export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> 
     const feed = await parser.parseURL(kaynak.url);
     const db = getDb();
 
-    const insert = db.prepare(`
-      INSERT OR IGNORE INTO haberler
-        (baslik, ozet, kaynak_url, kaynak_adi, kategori, yayin_tarihi, hash)
-      VALUES
-        (@baslik, @ozet, @kaynak_url, @kaynak_adi, @kategori, @yayin_tarihi, @hash)
-    `);
-
-    const insertMany = db.transaction((items: Parameters<typeof insert.run>[0][]) => {
-      let eklenen = 0;
-      for (const item of items) {
-        const result = insert.run(item);
-        if (result.changes > 0) eklenen++;
-      }
-      return eklenen;
-    });
-
     const hamItems = (feed.items ?? []).map((item) => {
       const ozet = ozetTemizle(item.contentSnippet ?? item.summary ?? item.content);
       return {
@@ -167,8 +151,30 @@ export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> 
       return gecti;
     });
 
-    sonuc.eklenen = insertMany(egitimItems);
-    sonuc.atlanan = egitimItems.length - sonuc.eklenen;
+    // ── ASYNC BATCH INSERT ──────────────────────────────────────────────
+    for (const item of egitimItems) {
+      try {
+        const result = await db.execute({
+          sql: `INSERT OR IGNORE INTO haberler
+                  (baslik, ozet, kaynak_url, kaynak_adi, kategori, yayin_tarihi, hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            item.baslik,
+            item.ozet,
+            item.kaynak_url,
+            item.kaynak_adi,
+            item.kategori,
+            item.yayin_tarihi,
+            item.hash,
+          ],
+        });
+        if (result.rowsAffected > 0) sonuc.eklenen++;
+        else sonuc.atlanan++;
+      } catch {
+        // hash çakışması veya başka hata — sessizce geç
+        sonuc.atlanan++;
+      }
+    }
   } catch (err: unknown) {
     sonuc.hata = err instanceof Error ? err.message : String(err);
   }

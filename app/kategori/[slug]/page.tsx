@@ -29,8 +29,8 @@ export default async function KategoriSayfasi({ params }: PageProps) {
   if (!meta) notFound();
 
   // Doğrudan kategoriye ait + genel haberler
-  const dogrudan = kategoriHaberleri(slug, 60);
-  const genelEk  = slug !== "genel" ? kategoriHaberleri("genel", 40) : [];
+  const dogrudan = await kategoriHaberleri(slug, 60);
+  const genelEk  = slug !== "genel" ? await kategoriHaberleri("genel", 40) : [];
 
   const urlSeti = new Set<string>();
   const haberler = [...dogrudan, ...genelEk].filter((h) => {

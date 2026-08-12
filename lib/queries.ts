@@ -1,55 +1,60 @@
 /**
  * lib/queries.ts
- * Tüm DB sorguları tek dosyada — page.tsx'ten import edilir.
+ * Tüm DB sorguları — async (@libsql/client)
  */
 
-import { getDb, Haber } from "./db";
+import { getDb, type Haber } from "./db";
 
 /** Son N haberi çek (varsayılan 100) */
-export function sonHaberler(limit = 100): Haber[] {
+export async function sonHaberler(limit = 100): Promise<Haber[]> {
   const db = getDb();
-  return db
-    .prepare(
-      `SELECT * FROM haberler
-       ORDER BY
-         COALESCE(yayin_tarihi, eklenme_tarihi) DESC
-       LIMIT ?`
-    )
-    .all(limit) as Haber[];
+  const result = await db.execute({
+    sql: `SELECT * FROM haberler
+          ORDER BY COALESCE(yayin_tarihi, eklenme_tarihi) DESC
+          LIMIT ?`,
+    args: [limit],
+  });
+  return result.rows as unknown as Haber[];
 }
 
 /** Kategori bazlı çekme */
-export function kategoriHaberleri(kategori: string, limit = 20): Haber[] {
+export async function kategoriHaberleri(
+  kategori: string,
+  limit = 20
+): Promise<Haber[]> {
   const db = getDb();
-  return db
-    .prepare(
-      `SELECT * FROM haberler
-       WHERE kategori = ?
-       ORDER BY COALESCE(yayin_tarihi, eklenme_tarihi) DESC
-       LIMIT ?`
-    )
-    .all(kategori, limit) as Haber[];
+  const result = await db.execute({
+    sql: `SELECT * FROM haberler
+          WHERE kategori = ?
+          ORDER BY COALESCE(yayin_tarihi, eklenme_tarihi) DESC
+          LIMIT ?`,
+    args: [kategori, limit],
+  });
+  return result.rows as unknown as Haber[];
 }
 
 /** Toplam haber sayısı */
-export function haberSayisi(): number {
+export async function haberSayisi(): Promise<number> {
   const db = getDb();
-  const row = db.prepare("SELECT COUNT(*) as n FROM haberler").get() as { n: number };
-  return row.n;
+  const result = await db.execute("SELECT COUNT(*) as n FROM haberler");
+  return (result.rows[0] as unknown as { n: number }).n;
 }
 
 /** Tek haber detayı */
-export function haberById(id: number): Haber | null {
+export async function haberById(id: number): Promise<Haber | null> {
   const db = getDb();
-  return (db.prepare("SELECT * FROM haberler WHERE id = ?").get(id) as Haber) ?? null;
+  const result = await db.execute({
+    sql: "SELECT * FROM haberler WHERE id = ?",
+    args: [id],
+  });
+  return (result.rows[0] as unknown as Haber) ?? null;
 }
 
 /**
  * Haberleri saat gruplarına ayır.
- * Aynı saatin başlıklarını tek grup olarak döndürür.
  */
 export interface SaatGrubu {
-  saat: string;   // "22:00", "21:00" vb.
+  saat: string;
   haberler: Haber[];
 }
 

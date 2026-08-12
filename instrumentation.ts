@@ -9,8 +9,12 @@
 export async function register() {
   // Yalnızca sunucu tarafında çalıştır (Edge runtime'ı atla)
   if (process.env.NEXT_RUNTIME !== "edge") {
+    const { setupDb } = await import("./lib/db");
     const { default: cron } = await import("node-cron");
     const { tumKaynaklariCek } = await import("./jobs/fetch-news");
+
+    // DB tablosunu oluştur (yoksa)
+    await setupDb().catch((e) => console.error("[db] Tablo kurulumu hatası:", e));
 
     // İlk çalıştırmada hemen bir kez çek
     console.log("[cron] Sunucu başladı — ilk RSS çekimi yapılıyor...");

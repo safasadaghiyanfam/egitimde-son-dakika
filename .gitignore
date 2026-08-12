@@ -42,3 +42,5 @@ next-env.d.ts
 
 # SQLite DB — Vercel'de çalışmaz, commit etme
 db/*.db
+db/*.db-shm
+db/*.db-wal
