@@ -27,7 +27,7 @@ export function getDb(): Client {
 /* ── Tablo kurulumu (uygulama açılışında çağrılır) ── */
 export async function setupDb(): Promise<void> {
   const db = getDb();
-  await db.executeMultiple(`
+  await db.execute(`
     CREATE TABLE IF NOT EXISTS haberler (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       baslik        TEXT    NOT NULL,
@@ -38,13 +38,15 @@ export async function setupDb(): Promise<void> {
       yayin_tarihi  DATETIME,
       eklenme_tarihi DATETIME NOT NULL DEFAULT (datetime('now')),
       hash          TEXT    NOT NULL UNIQUE
-    );
-
+    )
+  `);
+  await db.execute(`
     CREATE INDEX IF NOT EXISTS idx_yayin_tarihi
-      ON haberler (yayin_tarihi DESC);
-
+      ON haberler (yayin_tarihi DESC)
+  `);
+  await db.execute(`
     CREATE INDEX IF NOT EXISTS idx_kategori
-      ON haberler (kategori);
+      ON haberler (kategori)
   `);
 }
 

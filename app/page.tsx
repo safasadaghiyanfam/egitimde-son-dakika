@@ -143,10 +143,16 @@ function Manshet({ haber }: { haber: Haber | null }) {
    ANA SAYFA
    ───────────────────────────────────────────── */
 export default async function AnaSayfa() {
-  // DB'den haberler
-  const haberler = await sonHaberler(120);
-  const toplamSayi = await haberSayisi();
-  const gruplar = saatGruplari(haberler.slice(0, 40));  // Sağ akış için ilk 40
+  // DB'den haberler — hata olursa boş dizi döner
+  let haberler: Awaited<ReturnType<typeof sonHaberler>> = [];
+  let toplamSayi = 0;
+  try {
+    haberler = await sonHaberler(120);
+    toplamSayi = await haberSayisi();
+  } catch (e) {
+    console.error("[page] DB hatası:", e);
+  }
+  const gruplar = saatGruplari(haberler.slice(0, 40));
 
   // Manşet = en yeni haber
   const manshetHaber = haberler[0] ?? null;
