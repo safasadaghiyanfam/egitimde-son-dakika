@@ -811,6 +811,19 @@ img { max-width: 100%; display: block; }
 @media (max-width: 768px) {
   :root { --pad: 16px; }
 
+  .datebar { height: auto; padding-block: 8px; }
+  .datebar__inner { flex-direction: column; gap: 6px; align-items: center; justify-content: center; }
+  .datebar__right { flex-wrap: wrap; justify-content: center; gap: 12px; }
+
+  .masthead__logo-img { width: 60%; height: auto; max-width: 250px; margin: 2% 0; }
+  .masthead__subline { font-size: 10px; letter-spacing: .2em; padding: 6px 0 4px; }
+
+  .breaking-band__label { padding: 0 10px; font-size: 10px; letter-spacing: .1em; }
+  .breaking-item { font-size: 12px; }
+  
+  .main-nav__link { padding: 10px 14px; font-size: 12px; }
+  .trends-bar__label { font-size: 10px; letter-spacing: .1em; }
+
   .three-col-grid {
     grid-template-columns: 1fr;
   }
@@ -825,8 +838,6 @@ img { max-width: 100%; display: block; }
     border-left: none;
     padding-left: 0;
   }
-
-  .masthead__logo-img { height: 180px; max-width: 480px; }
 }
 
 /* ============================================================

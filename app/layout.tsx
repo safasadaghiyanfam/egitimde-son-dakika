@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import DateBar from "./components/DateBar";
 
 export const metadata: Metadata = {
   title: {
@@ -64,9 +65,6 @@ const TRENDS = [
    ───────────────────────────────────────────── */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const now = new Date();
-  const dateLabel = now.toLocaleDateString("tr-TR", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
   const year = now.getFullYear();
 
   return (
@@ -89,23 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* ── 2. TARİH / KONUM / SAAT ÇUBUĞU ── */}
-        <div className="datebar">
-          <div className="wrap datebar__inner">
-            <span className="datebar__date">
-              {dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}
-            </span>
-            <div className="datebar__right">
-              <span>Ankara 31° · Açık</span>
-              <span className="datebar__live">
-                <span className="live-dot" aria-hidden="true" />
-                Canlı
-              </span>
-              <span className="datebar__clock">
-                {now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-              </span>
-            </div>
-          </div>
-        </div>
+        <DateBar />
 
         {/* ── 3. LOGO (orijinal HTML birebir) ── */}
         <header className="masthead" role="banner">
