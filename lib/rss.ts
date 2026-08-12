@@ -102,6 +102,37 @@ function ozetTemizle(raw: string | undefined): string | null {
   return text.length > 280 ? text.slice(0, 277) + "…" : text || null;
 }
 
+/** RSS içeriğinden (HTML) veya enclosure'dan resim URL'si çıkarır */
+function resimBul(item: any): string | null {
+  // 1. Enclosure kontrolü
+  if (item.enclosure?.url) {
+    return item.enclosure.url;
+  }
+
+  // 2. Media content tag'leri kontrolü
+  const mediaContent = item["media:content"] || item.mediaContent;
+  if (mediaContent) {
+    if (Array.isArray(mediaContent) && mediaContent[0]?.url) {
+      return mediaContent[0].url;
+    } else if (mediaContent.url) {
+      return mediaContent.url;
+    }
+  }
+
+  // 3. İçerik içinde img tag'i arama
+  const icerik = item.content || item.summary || item.contentSnippet || "";
+  const imgRegex = /<img[^>]+src=["']([^"']+)["']/i;
+  const match = icerik.match(imgRegex);
+  if (match && match[1]) {
+    // Nispi URL ise temizle veya atla
+    if (match[1].startsWith("http")) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
 export interface KaydetSonucu {
   kaynak: string;
   toplam: number;
@@ -128,6 +159,7 @@ export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> 
 
     const hamItems = (feed.items ?? []).map((item) => {
       const ozet = ozetTemizle(item.contentSnippet ?? item.summary ?? item.content);
+      const resimUrl = resimBul(item);
       return {
         baslik: (item.title ?? "").trim(),
         ozet,
@@ -138,6 +170,7 @@ export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> 
           ? new Date(item.pubDate).toISOString()
           : null,
         hash: haberHash(item.title ?? ""),
+        resim_url: resimUrl,
       };
     });
 
@@ -156,8 +189,8 @@ export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> 
       try {
         const result = await db.execute({
           sql: `INSERT OR IGNORE INTO haberler
-                  (baslik, ozet, kaynak_url, kaynak_adi, kategori, yayin_tarihi, hash)
-                VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                  (baslik, ozet, kaynak_url, kaynak_adi, kategori, yayin_tarihi, hash, resim_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             item.baslik,
             item.ozet,
@@ -166,6 +199,7 @@ export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> 
             item.kategori,
             item.yayin_tarihi,
             item.hash,
+            item.resim_url,
           ],
         });
         if (result.rowsAffected > 0) sonuc.eklenen++;

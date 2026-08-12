@@ -100,7 +100,16 @@ export default async function KategoriSayfasi({ params }: PageProps) {
               </a>
               {manshet.ozet && <p className="manshet__lead">{manshet.ozet}</p>}
               <div className="manshet__img-wrap">
-                <div className="img-placeholder">Manşet görseli — 16:9</div>
+                {manshet.resim_url ? (
+                  <img
+                    src={manshet.resim_url}
+                    alt={manshet.baslik}
+                    className="manshet__img"
+                    style={{ width: "100%", height: "auto", display: "block" }}
+                  />
+                ) : (
+                  <div className="img-placeholder">Manşet görseli — 16:9</div>
+                )}
               </div>
               <p className="manshet__caption">
                 KAYNAK: {manshet.kaynak_adi.toUpperCase()} ·{" "}

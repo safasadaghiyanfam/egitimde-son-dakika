@@ -74,6 +74,17 @@ export default async function HaberDetay({ params }: PageProps) {
             <p className="haber-ozet">{haber.ozet}</p>
           )}
 
+          {/* Haber Görseli */}
+          {haber.resim_url && (
+            <div className="haber-gorsel-wrap" style={{ margin: "24px 0" }}>
+              <img
+                src={haber.resim_url}
+                alt={haber.baslik}
+                style={{ width: "100%", height: "auto", display: "block", borderRadius: "4px" }}
+              />
+            </div>
+          )}
+
           {/* Açıklama metni */}
           <p className="haber-devam-metin">
             Bu haberin tamamını orijinal kaynakta okumak için aşağıdaki butona tıklayın.

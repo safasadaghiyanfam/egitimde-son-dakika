@@ -37,7 +37,8 @@ export async function setupDb(): Promise<void> {
       kategori      TEXT    NOT NULL DEFAULT 'genel',
       yayin_tarihi  DATETIME,
       eklenme_tarihi DATETIME NOT NULL DEFAULT (datetime('now')),
-      hash          TEXT    NOT NULL UNIQUE
+      hash          TEXT    NOT NULL UNIQUE,
+      resim_url     TEXT
     )
   `);
   await db.execute(`
@@ -61,4 +62,5 @@ export interface Haber {
   yayin_tarihi: string | null;
   eklenme_tarihi: string;
   hash: string;
+  resim_url: string | null;
 }
