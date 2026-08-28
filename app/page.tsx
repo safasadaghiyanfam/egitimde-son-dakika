@@ -196,7 +196,7 @@ export default async function AnaSayfa() {
     console.error("[page] DB hatası:", e);
   }
 
-  // Slider için görseli olan gerçek DB haberlerini dönüştür (En son 10 haber)
+  // Slider için görseli olan gerçek DB haberlerini dönüştür (En son 10 haber — kendi sitemizdeki haber detayına linkler)
   const sliderHaberleri: SlideHaber[] = haberler
     .filter((h) => h.resim_url && h.resim_url.startsWith("http"))
     .slice(0, 10)
@@ -205,7 +205,7 @@ export default async function AnaSayfa() {
       baslik: h.baslik,
       gorselUrl: h.resim_url!,
       saat: saatString(h) || "15:00",
-      link: h.kaynak_url || `/haber/${h.id}`,
+      link: `/haber/${h.id}`,
     }));
 
   const gunGruplari = gunVeSaatGruplari(haberler.slice(0, 40));

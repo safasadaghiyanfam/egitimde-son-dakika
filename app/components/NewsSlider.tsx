@@ -398,11 +398,9 @@ export default function NewsSlider({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* TIKLANABİLİR ANA ALAN (Görsel + Başlık tek <a> etiketi içinde) */}
+        {/* TIKLANABİLİR ANA ALAN (Site içi haber detayına yönlendirir) */}
         <a
           href={currentHaber.link}
-          target="_blank"
-          rel="noopener noreferrer"
           className="slider-main-link"
           aria-label={currentHaber.baslik}
         >
