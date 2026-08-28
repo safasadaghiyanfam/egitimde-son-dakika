@@ -7,15 +7,17 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const KATEGORİ_META: Record<string, { baslik: string; aciklama: string; keywords?: string[] }> = {
-  ilkokul:  { baslik: "İlk Okul",                  aciklama: "İlkokullar, 1-4. sınıf eğitimi ve okul öncesi haberleri." },
-  ortaokul: { baslik: "Orta Okul",                 aciklama: "Ortaokul eğitimi, 5-8. sınıf ve LGS hazırlık süreçleri." },
-  lise:     { baslik: "Lise",                      aciklama: "Lise eğitimi, YKS, LGS, ÖSYM sınav haberleri ve sonuçları." },
-  avrupa:   { baslik: "Avrupa Eğitim Gündemi",     aciklama: "AB ülkelerinden ve Avrupa'dan eğitim politikası haberleri." },
-  dunya:    { baslik: "Dünyadan Eğitim Haberleri", aciklama: "Dünyanın dört bir yanından eğitim sistemi ve politika haberleri." },
-  meb:      { baslik: "MEB Haberleri",             aciklama: "Milli Eğitim Bakanlığı duyuruları, genelgeleri ve eğitim politikası haberleri.", keywords: ["meb", "milli eğitim", "bakan tekin"] },
-  osym:     { baslik: "ÖSYM Duyuruları",           aciklama: "Ölçme, Seçme ve Yerleştirme Merkezi sınav duyuruları, takvimi ve kılavuzlar.", keywords: ["ösym", "osym", "yks", "kpss", "ales", "yökdil", "e-ydts"] },
-  sinav:    { baslik: "Sınav Takvimi ve Sonuçlar", aciklama: "YKS, LGS, KPSS, ALES, YÖKDİL ve tüm merkezi sınav duyuruları.", keywords: ["sınav", "sinav", "yks", "lgs", "kpss", "yökdil", "sonuç"] },
-  genel:    { baslik: "Genel Eğitim",              aciklama: "Eğitim gündeminden tüm haberler." },
+  meb:     { baslik: "MEB Haberleri",             aciklama: "Milli Eğitim Bakanlığı duyuruları, öğretmen atamaları, okul ve müfredat haberleri.", keywords: ["meb", "milli eğitim", "bakan tekin", "öğretmen", "okul", "atama", "maarif"] },
+  osym:    { baslik: "ÖSYM & Sınavlar",           aciklama: "Ölçme, Seçme ve Yerleştirme Merkezi sınav duyuruları, YKS, KPSS, ALES, YÖKDİL, YDS kılavuzları.", keywords: ["ösym", "osym", "yks", "kpss", "ales", "yökdil", "yds", "sınav", "sinav", "e-ydts"] },
+  yok:     { baslik: "YÖK & Üniversiteler",       aciklama: "Yükseköğretim Kurulu (YÖK) kararları, üniversite kontenjanları, akademik duyurular ve KYK burs haberleri.", keywords: ["yök", "yok", "üniversite", "akademik", "fakülte", "rektör", "burs", "kyk", "özvar"] },
+  okullar: { baslik: "Okullar & LGS",             aciklama: "İlkokul, ortaokul, lise eğitimi, LGS tercih ve kayıt süreçleri.", keywords: ["okul", "ilkokul", "ortaokul", "lise", "lgs", "öğrenci", "karne", "tatil"] },
+  dunya:   { baslik: "Dünya & Avrupa Eğitim",     aciklama: "Dünya ve Avrupa ülkelerinden eğitim sistemleri, uluslararası akademik gelişmeler.", keywords: ["dünya", "avrupa", "yurt dışı", "uluslararası", "erasmus", "filistin", "zirve"] },
+  ilkokul: { baslik: "İlkokul Haberleri",        aciklama: "İlkokul eğitimi ve okul öncesi duyuruları.", keywords: ["ilkokul", "okul öncesi", "meb"] },
+  ortaokul:{ baslik: "Ortaokul & LGS",           aciklama: "Ortaokul eğitimi ve LGS hazırlık süreçleri.", keywords: ["ortaokul", "lgs", "sınav"] },
+  lise:    { baslik: "Lise & YKS",                aciklama: "Lise eğitimi ve YKS hazırlık haberleri.", keywords: ["lise", "yks", "üniversite"] },
+  avrupa:  { baslik: "Avrupa Eğitim Gündemi",     aciklama: "AB ülkelerinden eğitim politikası haberleri.", keywords: ["avrupa", "ab", "erasmus"] },
+  sinav:   { baslik: "Sınav Takvimi ve Sonuçlar", aciklama: "YKS, LGS, KPSS, ALES, YÖKDİL ve tüm sınav duyuruları.", keywords: ["sınav", "sinav", "yks", "lgs", "kpss", "yökdil", "sonuç"] },
+  genel:   { baslik: "Genel Eğitim",              aciklama: "Eğitim gündeminden tüm haberler." },
 };
 
 interface PageProps { params: Promise<{ slug: string }>; }

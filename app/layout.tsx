@@ -15,30 +15,29 @@ export const metadata: Metadata = {
 };
 
 /* ─────────────────────────────────────────────
-   ANA NAVİGASYON
+   ANA NAVİGASYON (Baştan Profesyonel İsimlendirme)
    ───────────────────────────────────────────── */
 const NAV = [
-  { label: "Gündem",                    href: "/" },
-  { label: "İlk Okul",                  href: "/kategori/ilkokul" },
-  { label: "Orta Okul",                 href: "/kategori/ortaokul" },
-  { label: "Lise",                      href: "/kategori/lise" },
-  { label: "Avrupa Eğitim Gündemi",     href: "/kategori/avrupa" },
-  { label: "Dünyadan Eğitim Haberleri", href: "/kategori/dunya" },
+  { label: "Gündem",           href: "/" },
+  { label: "MEB",              href: "/kategori/meb" },
+  { label: "ÖSYM & Sınavlar",  href: "/kategori/osym" },
+  { label: "YÖK & Üniversite", href: "/kategori/yok" },
+  { label: "Okullar & LGS",    href: "/kategori/okullar" },
+  { label: "Dünya & Avrupa",   href: "/kategori/dunya" },
 ] as const;
 
 /* ─────────────────────────────────────────────
-   GÜNDEM ETİKETLERİ — Spec §3.A: # işareti kaldırıldı
-   Gerçek kategori sayfalarına bağlandı
+   GÜNDEMDEKİLER (Trend Eğitim Başlıkları)
    ───────────────────────────────────────────── */
 const TRENDS = [
-  { label: "İlkokul",        href: "/kategori/ilkokul" },
-  { label: "Ortaokul",       href: "/kategori/ortaokul" },
-  { label: "Lise",           href: "/kategori/lise" },
-  { label: "Avrupa Eğitim",  href: "/kategori/avrupa" },
-  { label: "Dünya Eğitim",   href: "/kategori/dunya" },
-  { label: "MEB",            href: "/kategori/meb" },
-  { label: "ÖSYM",           href: "/kategori/osym" },
-  { label: "Sınav Takvimi",  href: "/kategori/sinav" },
+  { label: "Öğretmen Atamaları", href: "/kategori/meb" },
+  { label: "YKS & TYT/AYT",      href: "/kategori/osym" },
+  { label: "LGS Tercihleri",     href: "/kategori/okullar" },
+  { label: "KPSS Başvuruları",   href: "/kategori/osym" },
+  { label: "YÖK Kararları",      href: "/kategori/yok" },
+  { label: "KYK Burs & Yurt",    href: "/kategori/yok" },
+  { label: "YÖKDİL & YDS",       href: "/kategori/osym" },
+  { label: "Eğitim Dünyası",     href: "/kategori/dunya" },
 ] as const;
 
 /* ─────────────────────────────────────────────
