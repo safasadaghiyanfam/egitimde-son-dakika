@@ -26,19 +26,6 @@ const NAV = [
   { label: "Dünya & Avrupa",   href: "/kategori/dunya" },
 ] as const;
 
-/* ─────────────────────────────────────────────
-   GÜNDEMDEKİLER (Trend Eğitim Başlıkları)
-   ───────────────────────────────────────────── */
-const TRENDS = [
-  { label: "Öğretmen Atamaları", href: "/kategori/meb" },
-  { label: "YKS & TYT/AYT",      href: "/kategori/osym" },
-  { label: "LGS Tercihleri",     href: "/kategori/okullar" },
-  { label: "KPSS Başvuruları",   href: "/kategori/osym" },
-  { label: "YÖK Kararları",      href: "/kategori/yok" },
-  { label: "KYK Burs & Yurt",    href: "/kategori/yok" },
-  { label: "YÖKDİL & YDS",       href: "/kategori/osym" },
-  { label: "Eğitim Dünyası",     href: "/kategori/dunya" },
-] as const;
 
 /* ─────────────────────────────────────────────
    LAYOUT BİLEŞENİ
@@ -95,17 +82,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </nav>
 
-        {/* ── 6. GÜNDEM ETİKETLERİ — gerçek sayfalara bağlandı ── */}
-        <div className="trends-bar" aria-label="Gündem etiketleri">
-          <div className="wrap">
-            <div className="trends-bar__inner">
-              <span className="trends-bar__label">Gündemdekiler</span>
-              {TRENDS.map((tag) => (
-                <a key={tag.label} href={tag.href} className="trend-tag">{tag.label}</a>
-              ))}
-            </div>
-          </div>
-        </div>
 
         {/* ── 7. ANA İÇERİK ── */}
         <main className="page-content" id="main-content">
