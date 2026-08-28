@@ -119,10 +119,10 @@ export default async function AnaSayfa() {
     console.error("[page] DB hatası:", e);
   }
 
-  // Slider için görseli olan gerçek DB haberlerini dönüştür
+  // Slider için görseli olan gerçek DB haberlerini dönüştür (En son 10 haber)
   const sliderHaberleri: SlideHaber[] = haberler
     .filter((h) => h.resim_url && h.resim_url.startsWith("http"))
-    .slice(0, 5)
+    .slice(0, 10)
     .map((h) => ({
       id: h.id,
       baslik: h.baslik,
