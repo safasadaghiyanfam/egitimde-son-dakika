@@ -172,6 +172,7 @@ export default function NewsSlider({
           height: 460px;
           overflow: hidden;
           background-color: #111;
+          border-radius: 8px;
           user-select: none;
           outline: none;
         }

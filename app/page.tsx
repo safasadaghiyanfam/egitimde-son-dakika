@@ -139,9 +139,9 @@ export default async function AnaSayfa() {
   return (
     <>
       {/* ══════════════════════════════════════
-          MANŞET SLIDER (CAROUSEL) BİLEŞENİ
+          MANŞET SLIDER (CAROUSEL) BİLEŞENİ — Sayfa genişliğinde ortalı
           ══════════════════════════════════════ */}
-      <div style={{ marginBottom: "28px" }}>
+      <div className="wrap" style={{ marginBottom: "28px" }}>
         <NewsSlider
           haberler={sliderHaberleri.length > 0 ? sliderHaberleri : undefined}
           autoPlayInterval={5000}
