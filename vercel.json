@@ -2,7 +2,12 @@
   "crons": [
     {
       "path": "/api/fetch",
-      "schedule": "*/10 * * * *"
+      "schedule": "*/15 * * * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/fetch/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }
