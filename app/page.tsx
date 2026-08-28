@@ -4,7 +4,7 @@ import type { Haber } from "../lib/db";
 import NewsSlider, { type SlideHaber } from "./components/NewsSlider";
 
 export const metadata: Metadata = {
-  title: "Eğitimde Son Dakika | Ana Sayfa",
+  title: "Eğitimde Son Dakika | MEB, ÖSYM, YÖK, Sınav Haberleri",
   description: "Türkiye eğitim gündeminden son dakika haberleri: MEB, ÖSYM, YÖK, YKS, LGS, KPSS.",
 };
 
@@ -61,9 +61,9 @@ function SonDakikaAkisi({ gunGruplari }: { gunGruplari: GunGrubu[] }) {
   );
 }
 
-/** Manşet — DB'den ilk haber */
-function Manshet({ haber }: { haber: Haber | null }) {
-  if (!haber) {
+/** Orta Sütun: Ana Manşet + Alt Manşet Kartları (Sayfayı tam doldurur) */
+function OrtaManshetBolumu({ haberler }: { haberler: Haber[] }) {
+  if (!haberler || haberler.length === 0) {
     return (
       <article aria-label="Manşet haber">
         <div className="manshet__bos">
@@ -73,36 +73,94 @@ function Manshet({ haber }: { haber: Haber | null }) {
     );
   }
 
-  const tarihStr = istanbulFormat(haber.yayin_tarihi ?? haber.eklenme_tarihi, {
+  const anaManshet = haberler[0];
+  const altManshetler = haberler.slice(1, 5); // Orta sütunu doldurmak için 4 haber daha
+
+  const tarihStr = istanbulFormat(anaManshet.yayin_tarihi ?? anaManshet.eklenme_tarihi, {
     day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
 
   return (
-    <article aria-label="Manşet haber">
-      <div className="manshet__overline">
-        Manşet · {haber.kaynak_adi}
-      </div>
-      <a href={`/haber/${haber.id}`} style={{ display: "block" }}>
-        <h1 className="manshet__title">{haber.baslik}</h1>
-      </a>
-      {haber.ozet && <p className="manshet__lead">{haber.ozet}</p>}
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* 1. ANA MANŞET KARTI */}
+      <article aria-label="Ana manşet haber">
+        <div className="manshet__overline">
+          Manşet · {anaManshet.kaynak_adi.toLocaleUpperCase("tr-TR")}
+        </div>
+        <a href={`/haber/${anaManshet.id}`} style={{ display: "block" }}>
+          <h1 className="manshet__title">{anaManshet.baslik}</h1>
+        </a>
+        {anaManshet.ozet && <p className="manshet__lead">{anaManshet.ozet}</p>}
 
-      {haber.resim_url && (
-        <div className="manshet__img-wrap">
-          <img
-            src={haber.resim_url}
-            alt={haber.baslik}
-            className="manshet__img"
-            style={{ width: "100%", height: "auto", display: "block" }}
-          />
+        {anaManshet.resim_url && (
+          <div className="manshet__img-wrap">
+            <img
+              src={anaManshet.resim_url}
+              alt={anaManshet.baslik}
+              className="manshet__img"
+              style={{ width: "100%", height: "auto", display: "block", borderRadius: "4px" }}
+            />
+          </div>
+        )}
+
+        <p className="manshet__caption">
+          KAYNAK: {anaManshet.kaynak_adi.toLocaleUpperCase("tr-TR")} · {tarihStr}
+        </p>
+      </article>
+
+      {/* 2. ORTA SÜTUN ALT MANŞET KARTLARI (2x2 Grid) */}
+      {altManshetler.length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "16px",
+            borderTop: "2px solid var(--border, #eee)",
+            paddingTop: "20px",
+          }}
+        >
+          {altManshetler.map((h) => (
+            <div
+              key={h.id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                borderBottom: "1px solid #f0f0f0",
+                paddingBottom: "12px",
+              }}
+            >
+              {h.resim_url && (
+                <a href={`/haber/${h.id}`} style={{ display: "block", overflow: "hidden", borderRadius: "4px" }}>
+                  <img
+                    src={h.resim_url}
+                    alt={h.baslik}
+                    style={{ width: "100%", height: "140px", objectFit: "cover", display: "block" }}
+                  />
+                </a>
+              )}
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--red, #c00)", textTransform: "uppercase" }}>
+                {h.kaynak_adi.toLocaleUpperCase("tr-TR")}
+              </div>
+              <a
+                href={`/haber/${h.id}`}
+                style={{
+                  fontFamily: "'Libre Caslon Display', Georgia, serif",
+                  fontSize: "16px",
+                  lineHeight: "1.25",
+                  fontWeight: 600,
+                  color: "#111",
+                  textDecoration: "none",
+                }}
+              >
+                {h.baslik}
+              </a>
+            </div>
+          ))}
         </div>
       )}
-
-      <p className="manshet__caption">
-        KAYNAK: {haber.kaynak_adi.toLocaleUpperCase("tr-TR")} · {tarihStr}
-      </p>
-    </article>
+    </div>
   );
 }
 
@@ -132,14 +190,20 @@ export default async function AnaSayfa() {
     }));
 
   const gunGruplari = gunVeSaatGruplari(haberler.slice(0, 40));
-  const manshetHaber = haberler[0] ?? null;
-  const kisaHaberler = haberler.slice(1, 4);
-  const oneCikanlar = haberler.slice(4, 8);
+
+  // Düzenleme:
+  // - Sol sütun: 7 adet Kısa Kısa haber
+  // - Orta sütun: Ana Manşet + 4 Alt Manşet kartı (orta sütunu tam doldurur)
+  // - Öne Çıkanlar: 8 kartlık zengin haber ızgarası
+  const kisaHaberler = haberler.slice(1, 8);
+  const ortaHaberler = haberler.slice(0, 5);
+  const oneCikanlar = haberler.slice(5, 17); // 12 kartlık öne çıkanlar gridi
+  const dahaFazlaHaberler = haberler.slice(17);
 
   return (
     <>
       {/* ══════════════════════════════════════
-          MANŞET SLIDER (CAROUSEL) BİLEŞENİ — Sayfa genişliğinde ortalı
+          MANŞET SLIDER (CAROUSEL) BİLEŞENİ
           ══════════════════════════════════════ */}
       <div className="wrap" style={{ marginBottom: "28px" }}>
         <NewsSlider
@@ -187,8 +251,8 @@ export default async function AnaSayfa() {
           )}
         </aside>
 
-        {/* ── ORTA: MANŞET ── */}
-        <Manshet haber={manshetHaber} />
+        {/* ── ORTA: DOLDURULMUŞ ZENGİN MANŞET BÖLÜMÜ ── */}
+        <OrtaManshetBolumu haberler={ortaHaberler} />
 
         {/* ── SAĞ: SON DAKİKA AKIŞI ── */}
         <aside aria-label="Son dakika akışı">
@@ -202,11 +266,11 @@ export default async function AnaSayfa() {
       </div>
 
       {/* ══════════════════════════════════════
-          ÖNE ÇIKANLAR
+          ÖNE ÇIKANLAR — 12 Kartlık Zengin Grid
           ══════════════════════════════════════ */}
       {oneCikanlar.length > 0 && (
         <section className="one-cikanlar" aria-label="Öne çıkan haberler">
-          <div className="one-cikanlar__header">Öne Çıkanlar</div>
+          <div className="one-cikanlar__header">Öne Çıkan Eğitim Haberleri</div>
           <div className="one-cikanlar__grid">
             {oneCikanlar.map((h) => (
               <div key={h.id} className="one-card">
@@ -247,12 +311,12 @@ export default async function AnaSayfa() {
       {/* ══════════════════════════════════════
           DAHA FAZLA HABER
           ══════════════════════════════════════ */}
-      {haberler.length > 8 && (
+      {dahaFazlaHaberler.length > 0 && (
         <section className="daha-fazla" aria-label="Daha fazla haber">
           <div className="wrap">
             <div className="daha-fazla__header">Tüm Haberler</div>
             <div className="daha-fazla__liste">
-              {haberler.slice(8).map((h) => {
+              {dahaFazlaHaberler.map((h) => {
                 const saat = saatString(h);
                 return (
                   <a key={h.id} href={`/haber/${h.id}`} className="daha-fazla__item">
