@@ -61,7 +61,7 @@ function SonDakikaAkisi({ gunGruplari }: { gunGruplari: GunGrubu[] }) {
   );
 }
 
-/** Orta Sütun: Ana Manşet + Alt Manşet Kartları (Sayfayı tam doldurur) */
+/** Orta Sütun: Ana Manşet + Kesintisiz Son Dakika Haber Akışı */
 function OrtaManshetBolumu({ haberler }: { haberler: Haber[] }) {
   if (!haberler || haberler.length === 0) {
     return (
@@ -74,7 +74,7 @@ function OrtaManshetBolumu({ haberler }: { haberler: Haber[] }) {
   }
 
   const anaManshet = haberler[0];
-  const altManshetler = haberler.slice(1, 5); // Orta sütunu doldurmak için 4 haber daha
+  const devamHaberleri = haberler.slice(1); // Manşetin altına kesintisiz devam eden tüm haberler
 
   const tarihStr = istanbulFormat(anaManshet.yayin_tarihi ?? anaManshet.eklenme_tarihi, {
     day: "2-digit", month: "long", year: "numeric",
@@ -82,7 +82,7 @@ function OrtaManshetBolumu({ haberler }: { haberler: Haber[] }) {
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
       {/* 1. ANA MANŞET KARTI */}
       <article aria-label="Ana manşet haber">
         <div className="manshet__overline">
@@ -109,55 +109,74 @@ function OrtaManshetBolumu({ haberler }: { haberler: Haber[] }) {
         </p>
       </article>
 
-      {/* 2. ORTA SÜTUN ALT MANŞET KARTLARI (2x2 Grid) */}
-      {altManshetler.length > 0 && (
+      {/* 2. KESİNTİSİZ DEVAM EDEN HABER AKIŞI */}
+      {devamHaberleri.length > 0 && (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "16px",
-            borderTop: "2px solid var(--border, #eee)",
-            paddingTop: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px",
+            borderTop: "2px solid var(--red, #c00)",
+            paddingTop: "24px",
           }}
         >
-          {altManshetler.map((h) => (
-            <div
-              key={h.id}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-                borderBottom: "1px solid #f0f0f0",
-                paddingBottom: "12px",
-              }}
-            >
-              {h.resim_url && (
-                <a href={`/haber/${h.id}`} style={{ display: "block", overflow: "hidden", borderRadius: "4px" }}>
-                  <img
-                    src={h.resim_url}
-                    alt={h.baslik}
-                    style={{ width: "100%", height: "140px", objectFit: "cover", display: "block" }}
-                  />
-                </a>
-              )}
-              <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--red, #c00)", textTransform: "uppercase" }}>
-                {h.kaynak_adi.toLocaleUpperCase("tr-TR")}
-              </div>
-              <a
-                href={`/haber/${h.id}`}
+          <div style={{ fontSize: "14px", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--red, #c00)" }}>
+            Gündemdeki Diğer Haberler
+          </div>
+
+          {devamHaberleri.map((h) => {
+            const hTarih = istanbulFormat(h.yayin_tarihi ?? h.eklenme_tarihi, {
+              day: "2-digit", month: "long", year: "numeric",
+              hour: "2-digit", minute: "2-digit",
+            });
+
+            return (
+              <article
+                key={h.id}
                 style={{
-                  fontFamily: "'Libre Caslon Display', Georgia, serif",
-                  fontSize: "16px",
-                  lineHeight: "1.25",
-                  fontWeight: 600,
-                  color: "#111",
-                  textDecoration: "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  borderBottom: "1px solid var(--border, #eee)",
+                  paddingBottom: "20px",
                 }}
               >
-                {h.baslik}
-              </a>
-            </div>
-          ))}
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--red, #c00)", textTransform: "uppercase" }}>
+                  {h.kaynak_adi.toLocaleUpperCase("tr-TR")}
+                </div>
+                <a
+                  href={`/haber/${h.id}`}
+                  style={{
+                    fontFamily: "'Libre Caslon Display', Georgia, serif",
+                    fontSize: "20px",
+                    lineHeight: "1.25",
+                    fontWeight: 600,
+                    color: "#111",
+                    textDecoration: "none",
+                  }}
+                >
+                  {h.baslik}
+                </a>
+                {h.ozet && (
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: "14px", lineHeight: "1.5", color: "#555", margin: 0 }}>
+                    {h.ozet}
+                  </p>
+                )}
+                {h.resim_url && (
+                  <a href={`/haber/${h.id}`} style={{ display: "block", overflow: "hidden", borderRadius: "4px", marginTop: "6px" }}>
+                    <img
+                      src={h.resim_url}
+                      alt={h.baslik}
+                      style={{ width: "100%", maxHeight: "280px", objectFit: "cover", display: "block" }}
+                    />
+                  </a>
+                )}
+                <div style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}>
+                  KAYNAK: {h.kaynak_adi.toLocaleUpperCase("tr-TR")} · {hTarih}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
@@ -192,13 +211,13 @@ export default async function AnaSayfa() {
   const gunGruplari = gunVeSaatGruplari(haberler.slice(0, 40));
 
   // Düzenleme:
-  // - Sol sütun: 7 adet Kısa Kısa haber
-  // - Orta sütun: Ana Manşet + 4 Alt Manşet kartı (orta sütunu tam doldurur)
-  // - Öne Çıkanlar: 8 kartlık zengin haber ızgarası
-  const kisaHaberler = haberler.slice(1, 8);
-  const ortaHaberler = haberler.slice(0, 5);
-  const oneCikanlar = haberler.slice(5, 17); // 12 kartlık öne çıkanlar gridi
-  const dahaFazlaHaberler = haberler.slice(17);
+  // - Sol sütun: 10 adet Kısa Kısa haber
+  // - Orta sütun: Ana Manşet + altında kesintisiz 20 haber akışı (hiç boşluk kalmaz)
+  // - Öne Çıkanlar: 12 kartlık zengin haber ızgarası
+  const kisaHaberler = haberler.slice(1, 11);
+  const ortaHaberler = haberler.slice(0, 20); // Orta sütunu tam dolduran 20 haberlik kesintisiz akış
+  const oneCikanlar = haberler.slice(20, 32); // 12 kartlık öne çıkanlar gridi
+  const dahaFazlaHaberler = haberler.slice(32);
 
   return (
     <>
@@ -251,7 +270,7 @@ export default async function AnaSayfa() {
           )}
         </aside>
 
-        {/* ── ORTA: DOLDURULMUŞ ZENGİN MANŞET BÖLÜMÜ ── */}
+        {/* ── ORTA: KESİNTİSİZ MANŞET VE HABER AKIŞI ── */}
         <OrtaManshetBolumu haberler={ortaHaberler} />
 
         {/* ── SAĞ: SON DAKİKA AKIŞI ── */}
