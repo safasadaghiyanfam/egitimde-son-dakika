@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { kategoriHaberleri } from "../../../lib/queries";
+import { kategoriHaberleri, haberSayisi, istanbulFormat, saatString } from "../../../lib/queries";
+import type { Haber } from "../../../lib/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,7 +21,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const meta = KATEGORİ_META[slug];
   if (!meta) return {};
-  return { title: meta.baslik, description: meta.aciklama };
+  return {
+    title: meta.baslik,
+    description: meta.aciklama,
+    openGraph: { type: "website" },
+  };
 }
 
 export default async function KategoriSayfasi({ params }: PageProps) {
@@ -28,10 +33,12 @@ export default async function KategoriSayfasi({ params }: PageProps) {
   const meta = KATEGORİ_META[slug];
   if (!meta) notFound();
 
-  // Doğrudan kategoriye ait + genel haberler
+  // Spec §3.B: kategori filtresi gerçekten slug'a göre filtreli
+  // "genel" kategorisi tüm sayfalar için ek kaynak olarak dahil edilir
   const dogrudan = await kategoriHaberleri(slug, 60);
   const genelEk  = slug !== "genel" ? await kategoriHaberleri("genel", 40) : [];
 
+  // Deduplicate (kaynak_url'ye göre)
   const urlSeti = new Set<string>();
   const haberler = [...dogrudan, ...genelEk].filter((h) => {
     if (urlSeti.has(h.kaynak_url)) return false;
@@ -45,7 +52,7 @@ export default async function KategoriSayfasi({ params }: PageProps) {
 
   return (
     <>
-      {/* ── Kategori başlık şeridi ── */}
+      {/* Kategori başlık şeridi */}
       <div className="kat-band">
         <div className="wrap kat-band__inner">
           <span className="kat-band__label">{meta.baslik}</span>
@@ -56,19 +63,20 @@ export default async function KategoriSayfasi({ params }: PageProps) {
       {haberler.length === 0 ? (
         <div className="wrap" style={{ padding: "48px 0" }}>
           <p style={{ fontFamily: "var(--font-ui)", color: "var(--muted)" }}>
-            Bu kategoride henüz haber bulunmuyor.{" "}
-            <a href="/api/fetch" className="link-red">RSS'i şimdi güncelle →</a>
+            Bu kategoride henüz haber bulunmuyor.
           </p>
         </div>
       ) : (
         <div className="three-col-grid">
 
-          {/* SOL — Kısa haberler */}
-          <aside aria-label="Kısa haberler">
+          {/* SOL — Öne Çıkanlar */}
+          <aside aria-label="Öne çıkan haberler">
             <div className="kisa-kisa__title">Öne Çıkanlar</div>
             {kisaHaber.map((h) => (
               <div key={h.id} className="kisa-item">
-                <div className="kisa-item__cat">{h.kaynak_adi}</div>
+                <div className="kisa-item__cat">
+                  {h.kaynak_adi.toLocaleUpperCase("tr-TR")}
+                </div>
                 <a
                   href={`/haber/${h.id}`}
                   className="kisa-item__title"
@@ -91,29 +99,32 @@ export default async function KategoriSayfasi({ params }: PageProps) {
           {/* ORTA — Manşet */}
           {manshet ? (
             <article aria-label="Öne çıkan haber">
-              <div className="manshet__overline">{meta.baslik} · {manshet.kaynak_adi}</div>
-              <a
-                href={`/haber/${manshet.id}`}
-                style={{ display: "block" }}
-              >
+              <div className="manshet__overline">
+                {meta.baslik} · {manshet.kaynak_adi.toLocaleUpperCase("tr-TR")}
+              </div>
+              <a href={`/haber/${manshet.id}`} style={{ display: "block" }}>
                 <h1 className="manshet__title">{manshet.baslik}</h1>
               </a>
               {manshet.ozet && <p className="manshet__lead">{manshet.ozet}</p>}
-              <div className="manshet__img-wrap">
-                {manshet.resim_url ? (
+
+              {/* Görsel — yoksa placeholder metin yok (spec §3.A) */}
+              {manshet.resim_url && (
+                <div className="manshet__img-wrap">
                   <img
                     src={manshet.resim_url}
                     alt={manshet.baslik}
                     className="manshet__img"
                     style={{ width: "100%", height: "auto", display: "block" }}
                   />
-                ) : (
-                  <div className="img-placeholder">Manşet görseli — 16:9</div>
-                )}
-              </div>
+                </div>
+              )}
+
               <p className="manshet__caption">
-                KAYNAK: {manshet.kaynak_adi.toUpperCase()} ·{" "}
-                {new Date(manshet.yayin_tarihi ?? manshet.eklenme_tarihi).toLocaleString("tr-TR")}
+                {/* Spec §2.4 + §3.C: Türkçe uppercase */}
+                KAYNAK: {manshet.kaynak_adi.toLocaleUpperCase("tr-TR")} ·{" "}
+                {istanbulFormat(manshet.yayin_tarihi ?? manshet.eklenme_tarihi, {
+                  day: "2-digit", month: "long", year: "numeric",
+                })}
               </p>
             </article>
           ) : (
@@ -126,22 +137,20 @@ export default async function KategoriSayfasi({ params }: PageProps) {
               <span className="son-dakika__badge">Son Haberler</span>
               <span className="son-dakika__count">{haberler.length} haber</span>
             </div>
-            {akis.map((h) => (
-              <div key={h.id} className="sd-item">
-                <span className="sd-item__time">
-                  {new Date(h.yayin_tarihi ?? h.eklenme_tarihi).toLocaleTimeString("tr-TR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-                <a
-                  href={`/haber/${h.id}`}
-                  className="sd-item__title"
-                >
-                  {h.baslik}
-                </a>
-              </div>
-            ))}
+            {akis.map((h) => {
+              const saat = saatString(h);
+              return (
+                <div key={h.id} className="sd-item">
+                  {/* Saat sadece yayin_tarihi varsa (spec §2.5) */}
+                  {saat && (
+                    <span className="sd-item__time">{saat}</span>
+                  )}
+                  <a href={`/haber/${h.id}`} className="sd-item__title">
+                    {h.baslik}
+                  </a>
+                </div>
+              );
+            })}
           </aside>
 
         </div>
