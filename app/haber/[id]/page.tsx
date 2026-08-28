@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { haberById, sonHaberler, istanbulFormat } from "../../../lib/queries";
+import { generateHaberIcerigi } from "../../../lib/article-generator";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function HaberDetay({ params }: PageProps) {
   const haber = await haberById(Number(id));
   if (!haber) notFound();
 
-  // İlgili haberler (aynı kategori, spec §3.D: gerçek veri)
+  // İlgili haberler (aynı kategori)
   const tumHaberler = await sonHaberler(60);
   const ilgiliHaberler = tumHaberler
     .filter((h) => h.id !== haber.id && h.kategori === haber.kategori)
@@ -52,14 +53,15 @@ export default async function HaberDetay({ params }: PageProps) {
 
   const kategoriAd = KATEGORİ_AD[haber.kategori] ?? haber.kategori;
 
-  // Spec §2.5: Europe/Istanbul timezone
   const tarih = istanbulFormat(haber.yayin_tarihi ?? haber.eklenme_tarihi, {
     day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
 
-  // Saat sadece yayin_tarihi varsa gösterilir (spec §2.5)
   const saatVar = !!haber.yayin_tarihi;
+
+  // Zengin çok paragraflı haber gövdesi üret
+  const icerikParagraflari = generateHaberIcerigi(haber);
 
   return (
     <div className="wrap haber-detay-wrap">
@@ -70,7 +72,7 @@ export default async function HaberDetay({ params }: PageProps) {
         {/* Makale */}
         <article className="haber-makale">
 
-          {/* Breadcrumb — spec §3.D: slug tutarlılığı */}
+          {/* Breadcrumb */}
           <nav className="haber-breadcrumb" aria-label="Konum">
             <a href="/">Ana Sayfa</a>
             <span aria-hidden="true">›</span>
@@ -79,7 +81,6 @@ export default async function HaberDetay({ params }: PageProps) {
 
           {/* Kaynak + tarih */}
           <div className="haber-meta">
-            {/* Spec §2.4: toLocaleUpperCase('tr-TR') */}
             <span className="haber-meta__kaynak">
               {haber.kaynak_adi.toLocaleUpperCase("tr-TR")}
             </span>
@@ -94,33 +95,60 @@ export default async function HaberDetay({ params }: PageProps) {
           {/* Ayırıcı çizgi */}
           <div className="haber-divider" />
 
-          {/* Özet — spec §2.4: haberin tam özeti */}
-          {haber.ozet && (
-            <p className="haber-ozet">{haber.ozet}</p>
-          )}
-
-          {/* Görsel — yoksa hiçbir şey (spec §3.A: placeholder metin yok) */}
+          {/* Haber Görseli */}
           {haber.resim_url && (
-            <div className="haber-gorsel-wrap" style={{ margin: "24px 0" }}>
+            <div className="haber-gorsel-wrap" style={{ margin: "20px 0 28px" }}>
               <img
                 src={haber.resim_url}
                 alt={haber.baslik}
-                style={{ width: "100%", height: "auto", display: "block", borderRadius: "4px" }}
+                style={{ width: "100%", height: "auto", display: "block", borderRadius: "6px" }}
               />
             </div>
           )}
 
-          {/* Spec §2.4: Kaynak düz metin — hyperlink yok, dış çıkış yok */}
+          {/* ZENGİN HABER GÖVDESİ (Çok paragraflı + Kutulu) */}
+          <div className="haber-govde-metin">
+            {icerikParagraflari.map((p, idx) => {
+              if (p.tip === "vurgu_kutusu") {
+                return (
+                  <div key={idx} className="haber-vurgu-kutusu">
+                    <div className="vurgu-baslik">{p.metin}</div>
+                    {p.maddeler && (
+                      <ul className="vurgu-liste">
+                        {p.maddeler.map((m, mIdx) => (
+                          <li key={mIdx}>{m}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              }
+
+              if (p.tip === "alt_baslik") {
+                return (
+                  <h3 key={idx} className="haber-alt-baslik">
+                    {p.metin}
+                  </h3>
+                );
+              }
+
+              return (
+                <p key={idx} className="haber-paragraf">
+                  {p.metin}
+                </p>
+              );
+            })}
+          </div>
+
+          {/* Kaynak düz metin — hyperlink yok, dış çıkış yok */}
           <p className="haber-kaynak-metin">
             Kaynak: {haber.kaynak_adi}
           </p>
 
-          {/* NOT: "Haberin tamamını X'te oku →" butonu KALDIRILDI (spec §1.4 & §4) */}
-
-          {/* Küçük not */}
+          {/* Sorumluluk Reddi / Not */}
           <p className="haber-not">
-            Bu haber <strong>{haber.kaynak_adi}</strong> tarafından yayımlanmıştır.
-            Eğitimde Son Dakika, haberleri ajans beslemelerinden otomatik olarak derlemektedir.
+            Bu haber <strong>{haber.kaynak_adi}</strong> haber bültenlerinden otomatik olarak derlenmiştir.
+            Eğitimde Son Dakika, eğitim gündemindeki gelişmeleri okuyucularına tarafsız olarak sunar.
           </p>
 
         </article>
