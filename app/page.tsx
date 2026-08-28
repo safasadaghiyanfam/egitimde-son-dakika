@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { sonHaberler, haberSayisi, gunVeSaatGruplari, saatString, istanbulFormat, type GunGrubu } from "../lib/queries";
 import type { Haber } from "../lib/db";
+import NewsSlider, { type SlideHaber } from "./components/NewsSlider";
 
 export const metadata: Metadata = {
   title: "Eğitimde Son Dakika | Ana Sayfa",
@@ -60,7 +61,7 @@ function SonDakikaAkisi({ gunGruplari }: { gunGruplari: GunGrubu[] }) {
   );
 }
 
-/** Manşet — DB'den ilk haber; yoksa hiçbir şey render etme */
+/** Manşet — DB'den ilk haber */
 function Manshet({ haber }: { haber: Haber | null }) {
   if (!haber) {
     return (
@@ -87,7 +88,6 @@ function Manshet({ haber }: { haber: Haber | null }) {
       </a>
       {haber.ozet && <p className="manshet__lead">{haber.ozet}</p>}
 
-      {/* Görsel — yoksa placeholder metin yok (spec §3.A) */}
       {haber.resim_url && (
         <div className="manshet__img-wrap">
           <img
@@ -100,7 +100,6 @@ function Manshet({ haber }: { haber: Haber | null }) {
       )}
 
       <p className="manshet__caption">
-        {/* Spec §2.4: Türkçe toLocaleUpperCase — İ/I doğru */}
         KAYNAK: {haber.kaynak_adi.toLocaleUpperCase("tr-TR")} · {tarihStr}
       </p>
     </article>
@@ -120,17 +119,35 @@ export default async function AnaSayfa() {
     console.error("[page] DB hatası:", e);
   }
 
+  // Slider için görseli olan gerçek DB haberlerini dönüştür
+  const sliderHaberleri: SlideHaber[] = haberler
+    .filter((h) => h.resim_url && h.resim_url.startsWith("http"))
+    .slice(0, 5)
+    .map((h) => ({
+      id: h.id,
+      baslik: h.baslik,
+      gorselUrl: h.resim_url!,
+      saat: saatString(h) || "15:00",
+      link: h.kaynak_url || `/haber/${h.id}`,
+    }));
+
   const gunGruplari = gunVeSaatGruplari(haberler.slice(0, 40));
   const manshetHaber = haberler[0] ?? null;
-
-  // Kısa Kısa: 2–4. haberler — sadece gerçek DB verisi (spec §3: mockup yok)
   const kisaHaberler = haberler.slice(1, 4);
-
-  // Öne Çıkanlar: 5–8. haberler
   const oneCikanlar = haberler.slice(4, 8);
 
   return (
     <>
+      {/* ══════════════════════════════════════
+          MANŞET SLIDER (CAROUSEL) BİLEŞENİ
+          ══════════════════════════════════════ */}
+      <div style={{ marginBottom: "28px" }}>
+        <NewsSlider
+          haberler={sliderHaberleri.length > 0 ? sliderHaberleri : undefined}
+          autoPlayInterval={5000}
+        />
+      </div>
+
       {/* ══════════════════════════════════════
           3 SÜTUN ANA BÖLÜM
           ══════════════════════════════════════ */}
@@ -177,9 +194,7 @@ export default async function AnaSayfa() {
         <aside aria-label="Son dakika akışı">
           <div className="son-dakika__header">
             <span className="son-dakika__badge">Son Dakika Akışı</span>
-            {/* Spec §3.A: gerçek sayaç */}
             <span className="son-dakika__count">{toplamSayi} haber</span>
-            {/* "Tümü →" linki — sayfalama henüz yok, kaldırıldı */}
           </div>
           <SonDakikaAkisi gunGruplari={gunGruplari} />
         </aside>
@@ -187,7 +202,7 @@ export default async function AnaSayfa() {
       </div>
 
       {/* ══════════════════════════════════════
-          ÖNE ÇIKANLAR — sadece gerçek DB verisi
+          ÖNE ÇIKANLAR
           ══════════════════════════════════════ */}
       {oneCikanlar.length > 0 && (
         <section className="one-cikanlar" aria-label="Öne çıkan haberler">
@@ -195,7 +210,6 @@ export default async function AnaSayfa() {
           <div className="one-cikanlar__grid">
             {oneCikanlar.map((h) => (
               <div key={h.id} className="one-card">
-                {/* Görsel — yoksa kart metin-only (spec §3.A) */}
                 {h.resim_url && (
                   <div className="one-card__img">
                     <img
