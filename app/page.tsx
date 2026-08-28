@@ -196,10 +196,10 @@ export default async function AnaSayfa() {
     console.error("[page] DB hatası:", e);
   }
 
-  // Slider için görseli olan gerçek DB haberlerini dönüştür (En son 10 haber — kendi sitemizdeki haber detayına linkler)
+  // Slider için görseli olan gerçek DB haberlerini dönüştür (En son 20 haber — kendi sitemizdeki haber detayına linkler)
   const sliderHaberleri: SlideHaber[] = haberler
     .filter((h) => h.resim_url && h.resim_url.startsWith("http"))
-    .slice(0, 10)
+    .slice(0, 20)
     .map((h) => ({
       id: h.id,
       baslik: h.baslik,
