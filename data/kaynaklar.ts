@@ -72,7 +72,7 @@ const KAYNAKLAR: RssKaynak[] = [
   // ════════════════════════════════════════════════
   {
     ad: "TRT Haber",
-    url: "https://www.trthaber.com/sondakika.rss",
+    url: "https://www.trthaber.com/etiket/yok/",
     kategori: "genel",
     aktif: true,
     dil: "tr",

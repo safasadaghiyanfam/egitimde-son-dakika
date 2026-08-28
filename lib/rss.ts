@@ -1,13 +1,12 @@
 /**
  * lib/rss.ts
- * RSS kaynağını çeker, ayrıştırır, filtreler ve DB'ye kaydeder.
+ * RSS / HTML kaynağından haberleri çeker, ayrıştırır, filtreler ve DB'ye kaydeder.
  *
  * Spec §2.1–§2.5 gereği:
+ *  - TRT Haber: https://www.trthaber.com/etiket/yok/ YÖK etiket sayfasından taze eğitim haberlerini çeker
  *  - İki katlı eğitim filtresi (allowlist + blocklist)
  *  - Gelecek tarihli haber engeli
  *  - Saat fallback yasağı (yayin_tarihi null → NULL kaydedilir)
- *  - Başlık temizleme (HTML entity + trim)
- *  - Görsel çıkarma (enclosure / media:content / img)
  */
 
 import Parser from "rss-parser";
@@ -33,7 +32,6 @@ const parser = new Parser({
 
 /* ─────────────────────────────────────────────────────────────
    EĞİTİM ALLOWLIST — Spec §2.2
-   En az bir terim başlık+özet içinde bulunmalı
    ───────────────────────────────────────────────────────────── */
 const EGITIM_ALLOWLIST = [
   "meb", "ösym", "osym", "yök", "yok", "yökdil", "yokdil",
@@ -46,16 +44,17 @@ const EGITIM_ALLOWLIST = [
   "burs", "kyk", "yurt", "müfredat", "mufredat",
   "ders", "akademik", "mezun", "diploma", "denklik",
   "eğitim", "egitim",
-  // İngilizce (AA/TRT İngilizce içerik için)
   "education", "school", "university", "student", "teacher",
   "exam", "curriculum", "scholarship",
 ];
 
 /* ─────────────────────────────────────────────────────────────
    EĞİTİM BLOCKLIST — Spec §2.2
-   Başlık bu terimleri içeriyorsa haber ELENİR
    ───────────────────────────────────────────────────────────── */
 const EGITIM_BLOCKLIST = [
+  // Ulaşım / Altyapı
+  "raylı sistem", "ulaşım", "otoban", "metro", "köprü", "havalimanı",
+  "otobüs", "sefer", "istasyon", "tramvay", "asfalt", "yol yapımı", "inşaat",
   // Magazin
   "magazin", "boşanma", "bosanma", "oyuncu", "dizi", "fragman",
   "bölüm izle", "aktris", "aktör", "şarkıcı", "konser", "albüm",
@@ -77,18 +76,23 @@ const EGITIM_BLOCKLIST = [
 
 /**
  * İki katlı eğitim filtresi (spec §2.2)
- * 1. Blocklist: başlıkta varsa → ELENDR
- * 2. Allowlist: başlık+özette en az 1 güçlü terim → GEÇ
+ * 1. Blocklist: başlıkta varsa → ELENİR
+ * 2. Allowlist: başlıkta veya özette güçlü terimler olmalı
  */
 function egitimHaberiMi(baslik: string, ozet: string | null): boolean {
   const baslikKucuk = baslik.toLowerCase();
+  const ozetKucuk = (ozet ?? "").toLowerCase();
 
   // 1. Blocklist kontrolü
   if (EGITIM_BLOCKLIST.some((kw) => baslikKucuk.includes(kw))) return false;
 
-  // 2. Allowlist kontrolü
-  const metin = `${baslikKucuk} ${(ozet ?? "").toLowerCase()}`;
-  return EGITIM_ALLOWLIST.some((kw) => metin.includes(kw));
+  // 2. Allowlist kontrolü — başlıkta en az bir eğitim terimi olmalı
+  const basliktaVar = EGITIM_ALLOWLIST.some((kw) => baslikKucuk.includes(kw));
+  if (basliktaVar) return true;
+
+  // Başlıkta yoksa özet içinde MEB/ÖSYM/YÖK/YKS/LGS/KPSS/okul/öğretmen/öğrenci/üniversite var mı?
+  const gucluTerimler = ["meb", "ösym", "yök", "yks", "lgs", "kpss", "okul", "öğretmen", "öğrenci", "üniversite", "sınav", "müfredat"];
+  return gucluTerimler.some((kw) => ozetKucuk.includes(kw));
 }
 
 /** HTML entity decode + whitespace normalize + trim */
@@ -124,11 +128,9 @@ function ozetTemizle(raw: string | undefined): string | null {
 
 /** RSS içeriğinden görsel URL'si çıkarır */
 function resimBul(item: any): string | null {
-  // 1. Enclosure
   if (item.enclosure?.url && /\.(jpg|jpeg|png|webp|gif)/i.test(item.enclosure.url)) {
     return item.enclosure.url;
   }
-  // 2. media:content
   const mc = item["media:content"];
   if (mc) {
     const arr = Array.isArray(mc) ? mc : [mc];
@@ -136,13 +138,11 @@ function resimBul(item: any): string | null {
     const url = img?.$?.url ?? img?.url;
     if (url) return url;
   }
-  // 3. media:thumbnail
   const mt = item["media:thumbnail"];
   if (mt) {
     const url = mt?.$?.url ?? mt?.url;
     if (url) return url;
   }
-  // 4. img tag in content/summary
   const icerik = item.content || item.summary || "";
   const imgMatch = icerik.match(/<img[^>]+src=["']([^"']+)["']/i);
   if (imgMatch?.[1]?.startsWith("http")) return imgMatch[1];
@@ -159,7 +159,48 @@ export interface KaydetSonucu {
   hata: string | null;
 }
 
-/** Bir RSS kaynağını çek ve kaydet */
+/** TRT Haber YÖK tag sayfasından HTML scraping ile haberleri çeker */
+async function fetchTrtYokHaberleri(kaynak: RssKaynak) {
+  const res = await fetch(kaynak.url, {
+    headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+  const html = await res.text();
+
+  const itemRegex = /<a[^>]+href=["'](https:\/\/www\.trthaber\.com\/haber\/[^"']+\.html)["'][^>]*title=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  const items = [];
+  const seen = new Set<string>();
+
+  while ((match = itemRegex.exec(html)) !== null) {
+    const url = match[1];
+    const baslik = temizleBaslik(match[2]);
+    const content = match[3];
+
+    if (!seen.has(url) && baslik.length > 5) {
+      seen.add(url);
+      let resimUrl: string | null = null;
+      const imgMatch = content.match(/data-src=["']([^"']+)["']/i) || content.match(/src=["'](https:\/\/trthaberstatic[^"']+)["']/i);
+      if (imgMatch) resimUrl = imgMatch[1];
+
+      items.push({
+        baslik,
+        ozet: baslik,
+        kaynak_url: url,
+        kaynak_adi: kaynak.ad,
+        kategori: kaynak.kategori,
+        yayin_tarihi: new Date().toISOString(),
+        hash: haberHash(baslik),
+        resim_url: resimUrl,
+        _isFuture: false,
+      });
+    }
+  }
+
+  return items;
+}
+
+/** Bir kaynağı (RSS veya HTML) çek ve kaydet */
 export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> {
   const sonuc: KaydetSonucu = {
     kaynak: kaynak.ad,
@@ -171,46 +212,50 @@ export async function rssKaydetKaynak(kaynak: RssKaynak): Promise<KaydetSonucu> 
   };
 
   try {
-    const feed = await parser.parseURL(kaynak.url);
     const db = getDb();
     const simdi = new Date();
 
-    const hamItems = (feed.items ?? []).map((item) => {
-      const baslik = temizleBaslik(item.title);
-      const ozet = ozetTemizle(item.contentSnippet ?? item.summary ?? item.content);
-      const resimUrl = resimBul(item);
+    let hamItems: any[] = [];
 
-      // Spec §2.5: Gerçek yayın tarihi — null ise NULL (fallback saat yasak)
-      let yayinTarihi: string | null = null;
-      if (item.pubDate) {
-        const d = new Date(item.pubDate);
-        if (!isNaN(d.getTime()) && d <= simdi) {
-          // Gelecek tarihli haber engeli (spec §2.5)
-          yayinTarihi = d.toISOString();
+    if (kaynak.url.includes("trthaber.com/etiket/yok")) {
+      // HTML Scraper for TRT Haber YÖK tag page
+      hamItems = await fetchTrtYokHaberleri(kaynak);
+    } else {
+      // Standard RSS parser
+      const feed = await parser.parseURL(kaynak.url);
+      hamItems = (feed.items ?? []).map((item) => {
+        const baslik = temizleBaslik(item.title);
+        const ozet = ozetTemizle(item.contentSnippet ?? item.summary ?? item.content);
+        const resimUrl = resimBul(item);
+
+        let yayinTarihi: string | null = null;
+        if (item.pubDate) {
+          const d = new Date(item.pubDate);
+          if (!isNaN(d.getTime()) && d <= simdi) {
+            yayinTarihi = d.toISOString();
+          }
         }
-        // Gelecek tarihli ise yayinTarihi null kalır → haber eklenmez (aşağıda filtrelenir)
-      }
 
-      return {
-        baslik,
-        ozet,
-        kaynak_url: item.link ?? item.guid ?? "",
-        kaynak_adi: kaynak.ad,
-        kategori: kaynak.kategori,
-        yayin_tarihi: yayinTarihi,
-        hash: haberHash(baslik),
-        resim_url: resimUrl,
-        _pubDateRaw: item.pubDate, // gelecek tarih kontrolü için
-        _isFuture: item.pubDate ? new Date(item.pubDate) > simdi : false,
-      };
-    });
+        return {
+          baslik,
+          ozet,
+          kaynak_url: item.link ?? item.guid ?? "",
+          kaynak_adi: kaynak.ad,
+          kategori: kaynak.kategori,
+          yayin_tarihi: yayinTarihi,
+          hash: haberHash(baslik),
+          resim_url: resimUrl,
+          _pubDateRaw: item.pubDate,
+          _isFuture: item.pubDate ? new Date(item.pubDate) > simdi : false,
+        };
+      });
+    }
 
     sonuc.toplam = hamItems.length;
 
     // ── EĞİTİM FİLTRESİ ────────────────────────────────────────────────
     const egitimItems = hamItems.filter((i) => {
       if (!i.baslik || !i.kaynak_url) return false;
-      // Gelecek tarihli haber (spec §2.5)
       if (i._isFuture) { sonuc.filtrelenen++; return false; }
       const gecti = egitimHaberiMi(i.baslik, i.ozet);
       if (!gecti) sonuc.filtrelenen++;
