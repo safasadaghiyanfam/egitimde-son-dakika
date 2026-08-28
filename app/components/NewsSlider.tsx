@@ -337,52 +337,66 @@ export default function NewsSlider({
         /* En alttaki numaralı sayfalama (1, 2, 3...) */
         .pagination-container {
           position: absolute;
-          bottom: 16px;
+          bottom: 14px;
           left: 24px;
+          right: 24px;
           display: flex;
           align-items: center;
-          gap: 12px;
+          flex-wrap: wrap;
+          gap: 8px;
           z-index: 20;
         }
 
         @media (max-width: 768px) {
           .pagination-container {
-            left: 16px;
-            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            bottom: 10px;
+            gap: 5px;
           }
         }
 
         .pagination-number-btn {
-          background: transparent;
-          border: none;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 14px;
-          font-weight: 600;
+          background: rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(2px);
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          color: rgba(255, 255, 255, 0.85);
+          font-size: 17px;
+          font-weight: 700;
           font-family: inherit;
-          padding: 2px 4px;
+          min-width: 34px;
+          height: 34px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 2px; /* Kare tasarım */
           cursor: pointer;
           position: relative;
-          transition: color 200ms ease;
+          transition: all 180ms ease-in-out;
+          padding: 0 4px;
         }
 
         .pagination-number-btn:hover {
           color: #ffffff;
+          border-color: rgba(255, 255, 255, 0.7);
+          background: rgba(0, 0, 0, 0.85);
         }
 
+        /* Seçilen numara: Kırmızı Kare Çerçeveli */
         .pagination-number-btn.active {
-          color: #ff6b00; /* Aktif numara turuncu */
-          font-weight: 700;
+          color: #ffffff;
+          background: rgba(204, 0, 0, 0.9);
+          border: 2px solid #cc0000; /* Kırmızı kare çerçeve */
+          font-weight: 800;
+          box-shadow: 0 0 10px rgba(204, 0, 0, 0.6);
         }
 
-        .pagination-number-btn.active::after {
-          content: "";
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background-color: #ff6b00; /* Turuncu alt çizgi */
-          border-radius: 1px;
+        @media (max-width: 768px) {
+          .pagination-number-btn {
+            min-width: 26px;
+            height: 26px;
+            font-size: 13px;
+          }
         }
       `}</style>
 
