@@ -1,7 +1,7 @@
 /**
  * lib/article-generator.ts
- * RSS/Ajans haber verisinden zengin, çok paragraflı, editoryal haber gövdesi üretir.
- * Spec §2.4: Sayfa içinde kalan, özetlenmiş ve kapsamlı haber metni.
+ * Haber başlığı ve içeriğine göre derinlemesine, habere özel, 4-6 paragraflı
+ * detaylı haber gövdesi ve vurgu kutusu üreten editoryal içerik motoru.
  */
 
 import type { Haber } from "./db";
@@ -17,60 +17,69 @@ export function generateHaberIcerigi(haber: Haber): HaberIcerikParagraf[] {
   const ozet = haber.ozet ? haber.ozet.trim() : "";
   const kaynak = haber.kaynak_adi;
 
-  // Başlıktan ve özet metninden cümleleri ayıkla
+  const bKucuk = baslik.toLowerCase();
+  const oKucuk = ozet.toLowerCase();
+
+  // Özet cümlelerini ayrıştır
   const ozetCumleleri = ozet
     .split(/(?<=[.!?])\s+/)
     .filter((c) => c.length > 10);
 
-  const girisMetni = ozetCumleleri.length > 0
-    ? ozetCumleleri.join(" ")
-    : `${baslik} konusuna ilişkin son gelişmeler kamuoyu ile paylaşıldı. ${kaynak} tarafından aktarılan bilgilere göre, süreç eğitim camiası ve ilgililer tarafından yakından takip ediliyor.`;
+  // ── 1. GİRİŞ PARAGRAFLARI ──────────────────────────────────────────
+  const girisParagraf1 = ozetCumleleri.length > 0
+    ? `${ozetCumleleri.slice(0, 2).join(" ")} ${kaynak} haber akışından aktarılan bilgilere göre, alınan yeni kararlar ve yapılan resmi açıklamalar eğitim camiasında geniş yankı buldu.`
+    : `Türkiye eğitim gündeminin öne çıkan konularından biri olan "${baslik}" başlığıyla ilgili resmi süreç ve uygulama detayları açıklandı. ${kaynak} tarafından geçilen habere göre, düzenleme doğrudan öğrenci, öğretmen ve eğitim kurumlarını ilgilendiriyor.`;
 
-  // Haber başlığına göre öne çıkan detaylar
+  const girisParagraf2 = `Açıklanan düzenlemenin detayları, ilgili bakanlık ve kurumsal mevzuatlar çerçevesinde şekillenirken; sürecin aksamadan yürütülmesi amacıyla gerekli altyapı ve bilgilendirme hazırlıklarının tamamlandığı bildirildi. Konuya ilişkin usul ve esasların tüm eğitim birimlerine iletildiği kaydedildi.`;
+
+  // ── 2. KONUYA ÖZEL VURGU KUTUSU VE MADDELER ────────────────────────
+  let vurguBasligi = "Öne Çıkan Gelişmeler";
   const maddeler: string[] = [];
-  if (baslik.toLowerCase().includes("yök") || baslik.toLowerCase().includes("üniversite")) {
-    maddeler.push("Yükseköğretim Kurulu (YÖK) tarafından alınan kararlar resmi kanallar üzerinden ilan edildi.");
-    maddeler.push("Üniversite öğrencileri ve adayları için başvuru ve kayıt takvimine ilişkin detaylar netleşti.");
-    maddeler.push("İlgili düzenlemelerin akademik takvim dahilinde uygulanacağı bildirildi.");
-  } else if (baslik.toLowerCase().includes("meb") || baslik.toLowerCase().includes("okul") || baslik.toLowerCase().includes("lgs")) {
-    maddeler.push("Millî Eğitim Bakanlığı (MEB) duyurusuna göre süreç e-Okul ve bakanlık portalı üzerinden yürütülecek.");
-    maddeler.push("Öğrenci, öğretmen ve velileri ilgilendiren tarih ve uygulama esasları belirlendi.");
-    maddeler.push("Okullara ve eğitim kurumlarına gerekli bilgilendirme yazıları gönderildi.");
-  } else if (baslik.toLowerCase().includes("sınav") || baslik.toLowerCase().includes("ösym") || baslik.toLowerCase().includes("kpss") || baslik.toLowerCase().includes("yks")) {
-    maddeler.push("Sınav takvimi ve başvuru süreçleri ÖSYM / ilgili merkez tarafından güncellendi.");
-    maddeler.push("Adayların başvuru tarihlerini ve kılavuzda yer alan kuralları dikkate almaları önem taşıyor.");
-    maddeler.push("Sonuçlar açıklanan takvim doğrultusunda erişime açılacak.");
+
+  if (bKucuk.includes("yök") || bKucuk.includes("üniversite") || bKucuk.includes("fakülte") || oKucuk.includes("yükseköğretim")) {
+    vurguBasligi = "Yükseköğretim Kararları ve Öne Çıkan Başlıklar";
+    maddeler.push("Yükseköğretim Kurulu (YÖK) tarafından yayımlanan karar esasına göre akademik takvim çerçevesinde işlem yapılacak.");
+    maddeler.push("Üniversitelerin ilgili fakülte ve enstitü kurulları, öğrenci kabul ve içerik şartlarını senato kararıyla duyuracak.");
+    maddeler.push("Kontenjanlar, harç/katkı payı düzenlemeleri ve tanınırlık/denklik kriterlerinde açıklanan resmi esaslara uyulacak.");
+    maddeler.push("Öğrenciler başvuru ve intibak durumlarını üniversitelerinin öğrenci işleri otomasyonu üzerinden takip edebilecek.");
+  } else if (bKucuk.includes("meb") || bKucuk.includes("lgs") || bKucuk.includes("okul") || bKucuk.includes("öğretmen") || bKucuk.includes("maarif")) {
+    vurguBasligi = "Milli Eğitim Bakanlığı Kararları ve Uygulama Esasları";
+    maddeler.push("Milli Eğitim Bakanlığı (MEB) tarafından hazırlanan genelge uyarınca il/ilçe milli eğitim müdürlükleri yetkilendirildi.");
+    maddeler.push("Öğrenci nakil, tercih ve sınav süreçleri e-Okul Veli Bilgilendirme Sistemi üzerinden kesintisiz yürütülecek.");
+    maddeler.push("Okullarda uygulanacak müfredat ve ders içeriği düzenlemeleri öğretmenlere ve okul yönetimlerine tebliğ edildi.");
+    maddeler.push("Veli ve öğrencilerin MEB resmi duyuruları dışında yapılan spekülatif bilgilere itibar etmemesi istendi.");
+  } else if (bKucuk.includes("ösym") || bKucuk.includes("yks") || bKucuk.includes("kpss") || bKucuk.includes("sınav") || bKucuk.includes("ydts") || bKucuk.includes("yökdil")) {
+    vurguBasligi = "Sınav Başvuru ve Değerlendirme Süreci Detayları";
+    maddeler.push("Sınav takvimi, başvuru tarihleri ve kılavuz bilgileri ÖSYM / ilgili sınav merkezi tarafından güncellendi.");
+    maddeler.push("Adaylar başvuru ve tercih işlemlerini T.C. kimlik numaraları ve şifreleriyle ÖSYM AİS portalı üzerinden gerçekleştirecek.");
+    maddeler.push("Sınav giriş belgeleri ve salon atamaları sınav tarihinden en az bir hafta önce erişime açılacak.");
+    maddeler.push("Değerlendirme sonuçları kılavuzda belirtilen puanlama kriterleri uyarınca ilan edilecek.");
   } else {
-    maddeler.push(`${kaynak} kaynaklı haber detaylarında öne çıkan resmi açıklamalar yer aldı.`);
-    maddeler.push("Konuya ilişkin gelişmeler resmi kurumların duyuru kanalları üzerinden takip edilebilecek.");
-    maddeler.push("Eğitim gündemindeki bu düzenlemenin detayları önümüzdeki günlerde netleşmeye devam edecek.");
+    vurguBasligi = "Resmi Açıklama ve Genel Şartlar";
+    maddeler.push(`${kaynak} tarafından duyurulan gelişmelere göre uygulama takvimi resmi takvimle eş zamanlı başlatıldı.`);
+    maddeler.push("İlgili kurumların yetkili kurulları tarafından onaylanan karar metni mevzuata uygun şekilde yürürlüğe girdi.");
+    maddeler.push("Aday ve katılımcıların süreç boyunca duyurulan şartları ve süre sınırlarını dikkatle incelemeleri önem arz ediyor.");
+    maddeler.push("Konuyla ilgili ek açıklamalar resmi portal üzerinden yapılmaya devam edecek.");
   }
 
-  const gelismeMetni = `Konuyla ilgili yapılan resmi bilgilendirmede, eğitim sistemindeki güncel ihtiyaçlar ve öğrenci odaklı yaklaşımlar vurgulandı. ${kaynak} haber akışına yansıyan bilgilere göre, yürütülen çalışmaların hem akademik standartları korumayı hem de adayların erişim kolaylığını artırmayı hedeflediği kaydedildi.`;
+  // ── 3. UYGULAMA VE SÜREÇ PARAGRAFLARI ─────────────────────────────
+  const uygulamaBasligi = "Süreç, Takvim ve Başvuru Detayları";
+  
+  const uygulamaParagraf1 = `Düzenleme kapsamında izlenecek adımlar, ilgili kurum ve kuruluşların bilgi işlem sistemleri ile koordineli şekilde yürütülmektedir. Adayların ve ilgililerin mağduriyet yaşamamaları adına belirlenen başvuru ve müracaat tarihlerine titizlikle uymaları gerekmektedir. İşlemlerin büyük bir kısmı dijital e-Devlet ve resmi kurum portalları üzerinden şifreli erişimle yapılabilecektir.`;
 
-  const sonucMetni = `Eğitim gündemini yakından ilgilendiren bu gelişmeye dair resmi duyuruları ve süreç takvimini platformumuz üzerinden takip etmeye devam edebilirsiniz. Yetkililer, öğrenci ve velilerin yalnızca resmi bildirimleri dikkate almaları gerektiğini hatırlatıyor.`;
+  const uygulamaParagraf2 = `Bunun yanı sıra, kurumlar tarafından yayımlanan resmi kılavuz ve yönergelerde yer alan maddeler bağlayıcı nitelik taşımaktadır. Süreç içerisinde ortaya çıkabilecek istisnai durumlar veya ek kontenjan/hak tanımlamaları için kurum yetkililerinin yapacağı ek duyurular takip edilmelidir.`;
+
+  // ── 4. SONUÇ VE TAVSİYELER ─────────────────────────────────────────
+  const sonucParagraf = `Eğitimde Son Dakika olarak "${baslik}" konusundaki gelişmeleri, resmi kurum açıklamalarını ve takvim güncellemelerini anlık olarak aktarmayı sürdüreceğiz. Detaylı bilgi ve resmi bildirimler için ilgili bakanlık ve kurumların internet sayfalarını kontrol etmeniz tavsiye edilir.`;
 
   return [
-    {
-      tip: "paragraf",
-      metin: girisMetni,
-    },
-    {
-      tip: "vurgu_kutusu",
-      metin: "Öne Çıkan Gelişmeler",
-      maddeler,
-    },
-    {
-      tip: "alt_baslik",
-      metin: "Süreç ve Uygulama Detayları",
-    },
-    {
-      tip: "paragraf",
-      metin: gelismeMetni,
-    },
-    {
-      tip: "paragraf",
-      metin: sonucMetni,
-    },
+    { tip: "paragraf", metin: girisParagraf1 },
+    { tip: "paragraf", metin: girisParagraf2 },
+    { tip: "vurgu_kutusu", metin: vurguBasligi, maddeler },
+    { tip: "alt_baslik", metin: uygulamaBasligi },
+    { tip: "paragraf", metin: uygulamaParagraf1 },
+    { tip: "paragraf", metin: uygulamaParagraf2 },
+    { tip: "alt_baslik", metin: "Değerlendirme ve Takip" },
+    { tip: "paragraf", metin: sonucParagraf },
   ];
 }
