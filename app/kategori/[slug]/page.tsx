@@ -6,12 +6,15 @@ import type { Haber } from "../../../lib/db";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const KATEGORİ_META: Record<string, { baslik: string; aciklama: string }> = {
+const KATEGORİ_META: Record<string, { baslik: string; aciklama: string; keywords?: string[] }> = {
   ilkokul:  { baslik: "İlk Okul",                  aciklama: "İlkokullar, 1-4. sınıf eğitimi ve okul öncesi haberleri." },
   ortaokul: { baslik: "Orta Okul",                 aciklama: "Ortaokul eğitimi, 5-8. sınıf ve LGS hazırlık süreçleri." },
   lise:     { baslik: "Lise",                      aciklama: "Lise eğitimi, YKS, LGS, ÖSYM sınav haberleri ve sonuçları." },
   avrupa:   { baslik: "Avrupa Eğitim Gündemi",     aciklama: "AB ülkelerinden ve Avrupa'dan eğitim politikası haberleri." },
   dunya:    { baslik: "Dünyadan Eğitim Haberleri", aciklama: "Dünyanın dört bir yanından eğitim sistemi ve politika haberleri." },
+  meb:      { baslik: "MEB Haberleri",             aciklama: "Milli Eğitim Bakanlığı duyuruları, genelgeleri ve eğitim politikası haberleri.", keywords: ["meb", "milli eğitim", "bakan tekin"] },
+  osym:     { baslik: "ÖSYM Duyuruları",           aciklama: "Ölçme, Seçme ve Yerleştirme Merkezi sınav duyuruları, takvimi ve kılavuzlar.", keywords: ["ösym", "osym", "yks", "kpss", "ales", "yökdil", "e-ydts"] },
+  sinav:    { baslik: "Sınav Takvimi ve Sonuçlar", aciklama: "YKS, LGS, KPSS, ALES, YÖKDİL ve tüm merkezi sınav duyuruları.", keywords: ["sınav", "sinav", "yks", "lgs", "kpss", "yökdil", "sonuç"] },
   genel:    { baslik: "Genel Eğitim",              aciklama: "Eğitim gündeminden tüm haberler." },
 };
 
@@ -33,14 +36,23 @@ export default async function KategoriSayfasi({ params }: PageProps) {
   const meta = KATEGORİ_META[slug];
   if (!meta) notFound();
 
-  // Spec §3.B: kategori filtresi gerçekten slug'a göre filtreli
-  // "genel" kategorisi tüm sayfalar için ek kaynak olarak dahil edilir
+  // Doğrudan kategoriye ait + genel haberler
   const dogrudan = await kategoriHaberleri(slug, 60);
-  const genelEk  = slug !== "genel" ? await kategoriHaberleri("genel", 40) : [];
+  const genelEk  = await kategoriHaberleri("genel", 60);
+
+  // Eğer özel keyword filtresi varsa (meb, osym, sinav) genel haberleri filtrele
+  let tumHaberler = [...dogrudan, ...genelEk];
+  if (meta.keywords && meta.keywords.length > 0) {
+    const kw = meta.keywords;
+    tumHaberler = tumHaberler.filter((h) => {
+      const text = `${h.baslik.toLowerCase()} ${(h.ozet ?? "").toLowerCase()}`;
+      return kw.some((k) => text.includes(k));
+    });
+  }
 
   // Deduplicate (kaynak_url'ye göre)
   const urlSeti = new Set<string>();
-  const haberler = [...dogrudan, ...genelEk].filter((h) => {
+  const haberler = tumHaberler.filter((h) => {
     if (urlSeti.has(h.kaynak_url)) return false;
     urlSeti.add(h.kaynak_url);
     return true;

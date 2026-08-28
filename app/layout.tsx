@@ -27,18 +27,18 @@ const NAV = [
 ] as const;
 
 /* ─────────────────────────────────────────────
-   GÜNDEM ETİKETLERİ — Spec §3.A: # linkler kaldırıldı
+   GÜNDEM ETİKETLERİ — Spec §3.A: # işareti kaldırıldı
    Gerçek kategori sayfalarına bağlandı
    ───────────────────────────────────────────── */
 const TRENDS = [
-  { label: "#İlkokul",      href: "/kategori/ilkokul" },
-  { label: "#Ortaokul",     href: "/kategori/ortaokul" },
-  { label: "#Lise",         href: "/kategori/lise" },
-  { label: "#AvrupaEğitim", href: "/kategori/avrupa" },
-  { label: "#DünyaEğitim",  href: "/kategori/dunya" },
-  { label: "#MEB",          href: "/" },
-  { label: "#ÖSYM",         href: "/" },
-  { label: "#SınavTakvimi", href: "/" },
+  { label: "İlkokul",        href: "/kategori/ilkokul" },
+  { label: "Ortaokul",       href: "/kategori/ortaokul" },
+  { label: "Lise",           href: "/kategori/lise" },
+  { label: "Avrupa Eğitim",  href: "/kategori/avrupa" },
+  { label: "Dünya Eğitim",   href: "/kategori/dunya" },
+  { label: "MEB",            href: "/kategori/meb" },
+  { label: "ÖSYM",           href: "/kategori/osym" },
+  { label: "Sınav Takvimi",  href: "/kategori/sinav" },
 ] as const;
 
 /* ─────────────────────────────────────────────
